@@ -1,0 +1,12 @@
+pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex ->
+  // Avoid relying on `npx` in Gradle (can fail depending on global npm/npx setup).
+  // Run the CLI directly from local node_modules instead.
+  def rnRoot = new File(rootDir, "..")
+  def cliPath = new File(rnRoot, "node_modules/@react-native-community/cli/build/bin.js").absolutePath
+  ex.autolinkLibrariesFromCommand(["node", cliPath, "config"], rnRoot)
+}
+rootProject.name = 'sloplens'
+include ':app'
+includeBuild('../node_modules/@react-native/gradle-plugin')

@@ -3,6 +3,7 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { verifyInstallation } from 'nativewind';
 import type { FakeApiUser } from '../api/fakeUsers';
+import { PhotoPickerCard, type PickedPhoto } from '../components/PhotoPickerCard';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchBar } from '../components/SearchBar';
 import { UserCard } from '../components/UserCard';
@@ -21,6 +22,7 @@ export function UsersScreen() {
     null,
   );
   const [query, setQuery] = React.useState('');
+  const [photo, setPhoto] = React.useState<PickedPhoto | null>(null);
 
   const usersQuery = useFakeUsersQuery({ quantity: 20, seed: 123 });
 
@@ -55,6 +57,7 @@ export function UsersScreen() {
         onChangeText={setQuery}
         placeholder="Search name, username, email"
       />
+      <PhotoPickerCard value={photo} onChange={setPhoto} />
 
       {usersQuery.isPending ? (
         <View className="flex-1 items-center justify-center px-6">

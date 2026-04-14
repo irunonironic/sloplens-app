@@ -1,63 +1,31 @@
 import React from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { verifyInstallation } from 'nativewind';
 import type { FakeApiUser } from '../api/fakeUsers';
-import { fetchFakeUsers } from '../api/fakeUsers';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchBar } from '../components/SearchBar';
 import { UserCard } from '../components/UserCard';
 import { UserDetailsModal } from '../components/UserDetailsModal';
+import { useFakeUsersQuery } from '../queries/useFakeUsersQuery';
 
 export function UsersScreen() {
-  const [users, setUsers] = React.useState<FakeApiUser[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    // Helps surface setup issues when Tailwind styles aren't applying.
+    if (__DEV__ && typeof jest === 'undefined') {
+      verifyInstallation();
+    }
+  }, []);
+
   const [selectedUser, setSelectedUser] = React.useState<FakeApiUser | null>(
     null,
   );
   const [query, setQuery] = React.useState('');
 
-  const load = React.useCallback(async () => {
-    setErrorMessage(null);
-    const nextUsers = await fetchFakeUsers();
-    setUsers(nextUsers);
-  }, []);
-
-  React.useEffect(() => {
-    let isMounted = true;
-
-    (async () => {
-      try {
-        await load();
-      } catch (error) {
-        if (isMounted) {
-          setErrorMessage(error instanceof Error ? error.message : String(error));
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [load]);
-
-  const onRefresh = React.useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      await load();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [load]);
+  const usersQuery = useFakeUsersQuery({ quantity: 20, seed: 123 });
 
   const filteredUsers = React.useMemo(() => {
+    const users = usersQuery.data ?? [];
     const q = query.trim().toLowerCase();
     if (!q) return users;
     return users.filter(u => {
@@ -68,7 +36,7 @@ export function UsersScreen() {
         u.email.toLowerCase().includes(q)
       );
     });
-  }, [query, users]);
+  }, [query, usersQuery.data]);
 
   const meta = React.useMemo(() => {
     const count = filteredUsers.length;
@@ -88,21 +56,23 @@ export function UsersScreen() {
         placeholder="Search name, username, email"
       />
 
-      {isLoading ? (
+      {usersQuery.isPending ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base text-zinc-600">Loading…</Text>
         </View>
-      ) : errorMessage ? (
+      ) : usersQuery.isError ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base font-semibold text-zinc-900 mb-2">
             Something went wrong
           </Text>
           <Text className="text-sm text-zinc-600 text-center mb-4">
-            {errorMessage}
+            {usersQuery.error instanceof Error
+              ? usersQuery.error.message
+              : String(usersQuery.error)}
           </Text>
           <Pressable
             className="bg-zinc-900 px-4 py-3 rounded-lg"
-            onPress={onRefresh}>
+            onPress={() => usersQuery.refetch()}>
             <Text className="text-white font-semibold">Try again</Text>
           </Pressable>
         </View>
@@ -110,8 +80,8 @@ export function UsersScreen() {
         <FlatList
           data={filteredUsers}
           keyExtractor={item => item.uuid}
-          refreshing={isRefreshing}
-          onRefresh={onRefresh}
+          refreshing={usersQuery.isRefetching}
+          onRefresh={() => usersQuery.refetch()}
           contentContainerClassName="py-3"
           renderItem={({ item }) => (
             <UserCard user={item} onPress={() => setSelectedUser(item)} />

@@ -25,6 +25,19 @@ After changing Tailwind/NativeWind config, restart Metro with cache reset:
 npm start -- --reset-cache
 ```
 
+## Supabase login (custom token)
+
+This app uses a **custom login flow** that calls a Supabase Edge Function named `dev-login`.
+That function returns a JWT access token, which the app saves on-device (AsyncStorage) so the user stays logged in across app restarts.
+
+Env vars are loaded via `react-native-dotenv` (see `babel.config.js`). Create a local env file:
+
+```sh
+cp .env.example .env.local
+```
+
+Then fill in `SUPABASE_URL` and `SUPABASE_ANON_KEY` in `.env.local`.
+
 ## Step 1: Start Metro
 
 First, you will need to run **Metro**, the JavaScript build tool for React Native.
